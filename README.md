@@ -11,17 +11,17 @@ API desenvolvida para fornecer notícias atualizadas com filtros por palavra-cha
 
 ## 🔧 Como usar
 
-Clone o repositório:
+### Clone o repositório:
 
-`git clone https://github.com/sidnei-almeida/api_noticias.git`
-`cd api_noticias`
+- `git clone https://github.com/sidnei-almeida/api_noticias.git`
+- `cd api_noticias`
 
-Execute a API com:
+### Execute a API com:
 
-`uvicorn main:app --reload`
+- `uvicorn main:app --reload`
 
-Acesse a documentação interativa:
+### Acesse a documentação interativa:
 
-Swagger UI: `http://127.0.0.1:8000/docs`
+- Swagger UI: `http://127.0.0.1:8000/docs`
 
-Redoc: `http://127.0.0.1:8000/redoc`
+- Redoc: `http://127.0.0.1:8000/redoc`
