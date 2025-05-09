@@ -37,6 +37,14 @@ FEEDS_RSS_PT = [
     ("Estadão", "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml"),
     ("Valor Econômico", "https://valor.globo.com/rss.xml"),
     ("El País", "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada"),
+    ("O Globo", "https://oglobo.globo.com/rss.xml"),
+    ("R7", "https://noticias.r7.com/rss/"),
+    ("Correio Braziliense", "https://www.correiobraziliense.com.br/rss/cidades.xml"),
+    ("Agência Brasil", "https://agenciabrasil.ebc.com.br/rss/ultimasnews.xml"),
+    ("Terra Notícias", "https://www.terra.com.br/rss/0,,EI1,00.xml"),
+    ("IstoÉ", "https://istoe.com.br/feed/"),
+    ("CartaCapital", "https://www.cartacapital.com.br/feed/"),
+    ("Exame", "https://exame.com/feed/"),
 ]
 FEEDS_RSS_EN = [
     ("BBC", "http://feeds.bbci.co.uk/news/world/rss.xml"),
