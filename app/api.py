@@ -51,7 +51,7 @@ class BatchRequest(BaseModel):
 class BuscarRequest(BaseModel):
     termo: str
     idioma: Optional[str] = None
-    max_noticias: Optional[int] = 15
+    max_noticias: Optional[int] = 100
 
 # Rotas
 @app.get("/")
@@ -100,7 +100,7 @@ def buscar_classificar(req: BuscarRequest):
     if not termo or len(termo) < 2:
         raise HTTPException(status_code=400, detail="Informe um termo de busca válido.")
     idioma = req.idioma if req.idioma in ['pt', 'en'] else 'pt'
-    max_noticias = req.max_noticias if req.max_noticias and req.max_noticias > 0 else 15
+    max_noticias = req.max_noticias if req.max_noticias and req.max_noticias > 0 else 100
     noticias_encontradas = []
     for fonte, url in FEEDS_RSS:
         try:
