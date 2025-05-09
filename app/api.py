@@ -20,23 +20,43 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Carrega modelo
-model_path = 'models/model.pkl'
+# Carrega modelo e vetorizador
+model_path = 'models/logreg.pkl'
+vectorizer_path = 'models/vectorizer_logreg.pkl'
 try:
     modelo = joblib.load(model_path)
+    vectorizer = joblib.load(vectorizer_path)
 except Exception as e:
-    raise RuntimeError(f"Erro ao carregar o modelo: {e}")
+    raise RuntimeError(f"Erro ao carregar o modelo ou vetorizador: {e}")
 
 # Feeds RSS
-FEEDS_RSS = [
-    ("G1", "https://g1.globo.com/rss/g1/economia/"),
-    ("Estadão", "https://economia.estadao.com.br/rss/ultimas.xml"),
+# Fontes RSS separadas por idioma
+FEEDS_RSS_PT = [
+    ("G1", "https://g1.globo.com/rss/g1/"),
+    ("UOL", "https://rss.uol.com.br/feed/noticias.xml"),
+    ("Estadão", "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml"),
     ("Valor Econômico", "https://valor.globo.com/rss.xml"),
+    ("El País", "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada"),
+]
+FEEDS_RSS_EN = [
     ("BBC", "http://feeds.bbci.co.uk/news/world/rss.xml"),
     ("CNN", "http://rss.cnn.com/rss/edition.rss"),
-    ("El País", "https://elpais.com/rss/elpais/economia.xml"),
     ("Reuters", "https://www.reuters.com/rssFeed/businessNews"),
+    ("The Guardian", "https://www.theguardian.com/world/rss"),
+    ("New York Times", "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"),
+    ("NPR", "https://feeds.npr.org/1001/rss.xml"),
+    ("Associated Press", "https://apnews.com/rss/apf-topnews"),
+    ("Al Jazeera English", "https://www.aljazeera.com/xml/rss/all.xml"),
+    ("CNBC", "https://www.cnbc.com/id/100003114/device/rss/rss.html"),
+    ("USA Today", "http://rssfeeds.usatoday.com/usatoday-NewsTopStories"),
+    ("The Washington Post", "http://feeds.washingtonpost.com/rss/world"),
+    ("ABC News", "https://abcnews.go.com/abcnews/topstories"),
+    ("Politico", "https://www.politico.com/rss/politics08.xml"),
+    ("Financial Times", "https://www.ft.com/?format=rss"),
+    ("Bloomberg", "https://www.bloomberg.com/feed/podcast/etf-report.xml"),
 ]
+
+
 
 # Schemas
 class NoticiaRequest(BaseModel):
@@ -74,7 +94,8 @@ def classificar_noticia(req: NoticiaRequest):
     texto_limpo = limpar_texto(texto, idioma=idioma)
     if not texto_limpo:
         raise HTTPException(status_code=400, detail="Texto ficou vazio após pré-processamento.")
-    pred = modelo.predict([texto_limpo])[0]
+    X_vec = vectorizer.transform([texto_limpo])
+    pred = modelo.predict(X_vec)[0]
     return {"texto_limpo": texto_limpo[:200] + ("..." if len(texto_limpo) > 200 else ""), "rotulo": pred}
 
 @app.post("/classificar_batch/")
@@ -86,7 +107,8 @@ def classificar_batch(req: BatchRequest):
     textos_validos = [(t, tl) for t, tl in zip(req.textos, textos_limpos) if tl]
     if not textos_validos:
         raise HTTPException(status_code=400, detail="Nenhum texto válido após pré-processamento.")
-    preds = modelo.predict([tl for _, tl in textos_validos])
+    X_vecs = vectorizer.transform([tl for _, tl in textos_validos])
+    preds = modelo.predict(X_vecs)
     return {
         "resultados": [
             {"texto_limpo": tl[:100] + ("..." if len(tl) > 100 else ""), "rotulo": r}
@@ -102,7 +124,12 @@ def buscar_classificar(req: BuscarRequest):
     idioma = req.idioma if req.idioma in ['pt', 'en'] else 'pt'
     max_noticias = req.max_noticias if req.max_noticias and req.max_noticias > 0 else 100
     noticias_encontradas = []
-    for fonte, url in FEEDS_RSS:
+    # Seleciona as fontes de acordo com o idioma
+    if idioma == 'en':
+        feeds = FEEDS_RSS_EN
+    else:
+        feeds = FEEDS_RSS_PT
+    for fonte, url in feeds:
         try:
             feed = feedparser.parse(url)
             for entry in feed.entries:
@@ -129,7 +156,8 @@ def buscar_classificar(req: BuscarRequest):
     noticias_validas = [(n, tl) for n, tl in zip(noticias_encontradas, textos_limpos) if tl]
     if not noticias_validas:
         return {"resultados": [], "mensagem": "Nenhuma notícia válida após pré-processamento."}
-    preds = modelo.predict([tl for _, tl in noticias_validas])
+    X_vecs = vectorizer.transform([tl for _, tl in noticias_validas])
+    preds = modelo.predict(X_vecs)
     resultados = []
     for (noticia, texto_limpo), rotulo in zip(noticias_validas, preds):
         resultados.append({
@@ -142,8 +170,10 @@ def buscar_classificar(req: BuscarRequest):
         })
     return {"resultados": resultados, "total": len(resultados)}
 
-# Ponto de entrada para execução local ou no Render
+# Ponto de entrada para execução local
+# No Render NÃO execute uvicorn.run manualmente, pois o Render já faz isso automaticamente.
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 10000))  # 10000 é a porta padrão do Render
+    # Para rodar localmente, acesse http://localhost:8000
     uvicorn.run("app.api:app", host="0.0.0.0", port=port)

@@ -55,12 +55,22 @@ def remover_acentos(texto):
 
 # Função aprimorada de limpeza de texto
 def limpar_texto(texto, idioma='pt'):
+    import itertools
     if not isinstance(texto, str):
         return ''
     texto = texto.lower().strip()
-    texto = re.sub(r'\s+', ' ', texto)  # Normaliza espaços
-    texto = re.sub(r"[^a-zà-úA-ZÀ-Ú\s]", "", texto)  # Remove caracteres especiais
-    texto = texto.strip()
+    texto = re.sub(r'https?://\S+|www\.\S+', '', texto)  # Remove URLs
+    texto = re.sub(r'\S+@\S+', '', texto)                # Remove emails
+    texto = re.sub(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', '', texto)  # Remove datas tipo 12/05/2024
+    texto = re.sub(r'\b\d{1,2}:\d{2}(?::\d{2})?\b', '', texto)  # Remove horas tipo 14:30 ou 14:30:00
+    texto = re.sub(r'\d+', '', texto)                    # Remove números
+    texto = re.sub(r'[@#][\w_-]+', '', texto)            # Remove hashtags e menções
+    texto = re.sub(r'\[.*?\]|\(.*?\)', '', texto)     # Remove texto entre colchetes e parênteses
+    texto = re.sub(r'\b(r\$|us\$|milhoes|bilhoes|kg|km|m|cm|mm|g|l|ml|%)\b', '', texto)  # Remove símbolos de moeda/unidades
+    texto = re.sub(r'(.)\1{2,}', r'\1', texto)          # Remove sequências de caracteres repetidos
+    texto = re.sub(r'\b([a-z])\1+\b', '', texto)       # Remove palavras de uma só letra repetida
+    texto = re.sub(r"[^a-zà-úA-ZÀ-Ú\s]", " ", texto)  # Remove caracteres especiais
+    texto = re.sub(r'\s+', ' ', texto)                   # Normaliza espaços
     # Remove termos não-noticiosos conforme idioma
     termos = TERMOS_EXCLUIR if idioma == 'pt' else TERMOS_EXCLUIR_EN
     for termo in termos:
@@ -69,10 +79,18 @@ def limpar_texto(texto, idioma='pt'):
     # Remove acentuação para stopwords
     texto_sem_acentos = remover_acentos(texto)
     tokens = texto_sem_acentos.split()
+    # Remove palavras muito curtas ou muito longas
+    tokens = [t for t in tokens if 2 < len(t) < 25]
+    # Remove palavras repetidas sequencialmente
+    tokens = [key for key, group in itertools.groupby(tokens)]
     # Seleciona stopwords conforme idioma
     sw = stopwords_pt if idioma == 'pt' else stopwords_en
-    tokens = [t for t in tokens if t not in sw and len(t) > 2]
+    tokens = [t for t in tokens if t not in sw]
+    # Remove caracteres isolados
+    tokens = [t for t in tokens if len(t) > 1]
     texto_final = " ".join(tokens)
+    # Normaliza espaços finais novamente
+    texto_final = re.sub(r'\s+', ' ', texto_final).strip()
     # Filtra textos muito curtos
     if len(texto_final.split()) < 5:
         return ''

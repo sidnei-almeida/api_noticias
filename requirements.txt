@@ -10,3 +10,6 @@ pandas==2.2.3
 nltk==3.8.1
 regex==2024.11.6
 unicodedata2==16.0.0
+xgboost
+optuna
+lightgbm  # opcional, mas recomendado para suporte completo ao pipeline
